@@ -3,6 +3,8 @@
 A dark-themed todo app built with Vite, React 19 and TypeScript. Todos persist to
 `localStorage`, so there is no backend and no account.
 
+![Todo App Screenshot](./public/todoapp.png)
+
 ## Features
 
 - **Create, edit, complete and delete** todos, each rendered as its own card.
