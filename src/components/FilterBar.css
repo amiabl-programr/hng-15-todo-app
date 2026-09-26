@@ -1,0 +1,70 @@
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filter-bar__group {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.filter-bar__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.filter-bar__tab:hover {
+  color: var(--text);
+}
+
+.filter-bar__tab[aria-pressed='true'] {
+  background: rgb(144 184 50 / 14%);
+  color: var(--accent);
+}
+
+.filter-bar__count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 6%);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter-bar__tab[aria-pressed='true'] .filter-bar__count {
+  background: rgb(144 184 50 / 20%);
+}
+
+.filter-bar__clear {
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.filter-bar__clear:hover {
+  color: var(--danger);
+}
