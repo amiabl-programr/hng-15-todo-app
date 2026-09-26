@@ -14,6 +14,8 @@ const EMPTY_MESSAGES = {
   completed: 'No completed tasks yet.',
 } as const
 
+const REPO_URL = 'https://github.com/amiabl-programr/hng-15-todo-app'
+
 export default function App() {
   const {
     todos,
@@ -73,6 +75,30 @@ export default function App() {
             ? 'All caught up.'
             : `${counts.active} ${counts.active === 1 ? 'task' : 'tasks'} left`}
         </p>
+
+        <div className="app__meta">
+          <p className="app__credit">Made with love by Victor</p>
+          <a
+            className="app__star"
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              className="app__star-icon"
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.418A.75.75 0 0 1 8 .25Z"
+              />
+            </svg>
+            Star on GitHub
+          </a>
+        </div>
       </header>
 
       {error !== null && (
