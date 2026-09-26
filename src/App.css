@@ -14,8 +14,14 @@
   gap: 4px;
 }
 
+.app__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .app__logo {
-  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
 .app__title {
