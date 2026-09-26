@@ -64,6 +64,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app__header">
+        <img className="app__logo" src="/logo.svg" width="32" height="32" alt="" />
         <h1 className="app__title">Tasks</h1>
         <p className="app__subtitle">
           {counts.active === 0 && counts.all > 0

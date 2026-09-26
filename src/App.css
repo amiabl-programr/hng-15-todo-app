@@ -14,6 +14,10 @@
   gap: 4px;
 }
 
+.app__logo {
+  margin-bottom: 6px;
+}
+
 .app__title {
   margin: 0;
   font-size: 30px;
