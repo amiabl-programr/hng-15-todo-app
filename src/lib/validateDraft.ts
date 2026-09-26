@@ -1,4 +1,5 @@
 import { isPastDue, parseDateKey, todayKey } from './dueDate'
+import { normalizeText, TITLE_MAX_LENGTH } from './sanitize'
 import type { TodoDraft } from '../types'
 
 /**
@@ -7,8 +8,12 @@ import type { TodoDraft } from '../types'
  * the calendar advances, which is what makes a todo overdue rather than invalid.
  */
 export function validateDraft(draft: TodoDraft): string | null {
-  if (draft.title.trim().length === 0) {
+  if (normalizeText(draft.title).length === 0) {
     return 'Give the task a title before saving.'
+  }
+
+  if ([...normalizeText(draft.title)].length > TITLE_MAX_LENGTH) {
+    return `Keep the title to ${TITLE_MAX_LENGTH} characters or fewer.`
   }
 
   if (draft.dueDate === null) {
@@ -20,8 +25,7 @@ export function validateDraft(draft: TodoDraft): string | null {
   }
 
   if (isPastDue(draft.dueDate)) {
-    const today = todayKey()
-    return `Due date cannot be in the past. Today is ${today}.`
+    return `Due date cannot be in the past. Today is ${todayKey()}.`
   }
 
   return null
