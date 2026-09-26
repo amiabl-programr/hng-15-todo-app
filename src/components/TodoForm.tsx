@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { todayKey } from '../lib/dueDate'
+import { validateDraft } from '../lib/validateDraft'
 import type { Todo, TodoDraft } from '../types'
 import './TodoForm.css'
 
@@ -30,13 +32,13 @@ export function TodoForm({
   }
 
   const isEditing = editingTodo !== null
-  const trimmedTitle = draft.title.trim()
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (trimmedTitle.length === 0) {
-      setValidationError('Give the task a title before saving.')
+    const message = validateDraft(draft)
+    if (message !== null) {
+      setValidationError(message)
       return
     }
 
@@ -80,6 +82,7 @@ export function TodoForm({
             className="todo-form__input"
             type="date"
             value={draft.dueDate ?? ''}
+            min={todayKey()}
             onChange={(event) =>
               onDraftChange({
                 ...draft,
