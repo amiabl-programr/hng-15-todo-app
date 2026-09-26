@@ -1,75 +1,109 @@
-# React + TypeScript + Vite
+# Todo App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A dark-themed todo app built with Vite, React 19 and TypeScript. Todos persist to
+`localStorage`, so there is no backend and no account.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Create, edit, complete and delete** todos, each rendered as its own card.
+- **Due dates** that cannot be set in the past. Once set, a due date is allowed to
+  fall behind the current day — that is what marks a task overdue.
+- **Filtering** by all / active / completed, with live counts, plus a one-click
+  "clear completed".
+- **Drag to reorder** cards, or focus a card's handle and use the arrow keys.
+- **Persistence** to `localStorage`, rehydrated on load.
 
-## React Compiler
+## Getting started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+pnpm install
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Start the dev server with HMR |
+| `pnpm build` | Typecheck with `tsc -b`, then build for production |
+| `pnpm preview` | Serve the production build locally |
+| `pnpm lint` | ESLint over the project |
+| `pnpm test` | Jest unit tests |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Project structure
 
 ```
+src/
+  types.ts               Domain types shared by everything below
+  lib/
+    todoStore.ts         Single source of truth: state, mutations, persistence
+    storage.ts           localStorage read/write with a validating type guard
+    dueDate.ts           Local-calendar date keys, parsing, formatting
+    sanitize.ts          Text normalisation and length capping
+    validateDraft.ts     Form validation rules
+  hooks/
+    useTodos.ts          Subscribes to the store, derives counts and filtering
+  components/
+    TodoForm.tsx         Add and edit
+    FilterBar.tsx        Filter tabs and counts
+    TodoCard.tsx         One card, including drag and keyboard reordering
+    TodoList.tsx         Ordering, drag state, delete exit animation
+  App.tsx                Composition and form/edit state
+```
+
+`todoStore` is a small external store that the UI reads through
+`useSyncExternalStore`. Array order *is* display order, so reordering is just an
+array move and needs no `order` field. Every write funnels through the store,
+which is why sanitizing and persistence live there rather than in the components.
+
+## Data model
+
+```ts
+interface Todo {
+  id: string
+  title: string
+  completed: boolean
+  dueDate: string | null // local 'YYYY-MM-DD'
+  createdAt: number
+}
+```
+
+`dueDate` is a local calendar date rather than a timestamp, so "due today" means
+the same thing regardless of timezone. Those keys compare correctly as plain
+strings, which keeps the overdue check trivial.
+
+## Input handling and XSS
+
+All text passes through `sanitizeText` before it is stored. It NFC-normalises the
+input, strips zero-width and bidi formatting marks and C0/C1 control characters,
+turns line separators into spaces, collapses whitespace runs, and caps the title
+at 120 code points. Truncation is done by code point so an emoji is never cut in
+half.
+
+Titles are **not** html-escaped before storage, and that is deliberate. React
+escapes every text node and attribute value on render, so escaping on the way in
+would double-encode the data: a title of `<b>` would be saved as `&lt;b&gt;` and
+then displayed literally as `&lt;b&gt;`.
+
+The actual XSS risk in a React app is opting out of that escaping, so `eslint.config.js`
+bans it outright:
+
+- `dangerouslySetInnerHTML`
+- `window.innerHTML` / `document.innerHTML` assignment
+- `eval` and `new Function`
+
+Sanitizing and that lint rule are complementary: the first keeps stored data
+clean, the second removes the vector.
+
+## Testing
+
+Jest with `ts-jest` and the jsdom environment. 79 tests cover the date helpers,
+the sanitizer, draft validation, storage round-tripping and error handling, and
+every store mutation including reordering and no-op behaviour.
+
+```bash
+pnpm test
+```
+
+Tests live next to the code they cover (`src/lib/dueDate.test.ts`) and are
+excluded from the production build via `tsconfig.app.json`.
