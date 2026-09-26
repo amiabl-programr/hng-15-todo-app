@@ -1,4 +1,5 @@
 import { readTodos, writeTodos } from './storage'
+import { sanitizeTitle } from './sanitize'
 import type { Todo, TodoDraft, TodoEdits, TodoId } from '../types'
 
 export interface TodoStoreState {
@@ -44,15 +45,23 @@ function commit(todos: Todo[]): void {
   notify()
 }
 
+/** True when `next` holds exactly the same todos in the same order. */
+function isUnchanged(current: Todo[], next: Todo[]): boolean {
+  return current.length === next.length && current.every((todo, index) => todo === next[index])
+}
+
 /**
- * Applies a recipe to the current todos. A recipe that returns the same array is
- * treated as a no-op, which keeps pointless writes out of localStorage.
+ * Applies a recipe to the current todos. A recipe that leaves the list unchanged
+ * is dropped here, which keeps pointless localStorage writes and subscriber
+ * notifications out of no-op actions like deleting an unknown id.
  */
 function update(recipe: (todos: Todo[]) => Todo[]): void {
-  const next = recipe(state.todos)
-  if (next !== state.todos) {
-    commit(next)
+  const current = state.todos
+  const next = recipe(current)
+  if (next === current || isUnchanged(current, next)) {
+    return
   }
+  commit(next)
 }
 
 function move(todos: Todo[], from: number, to: number): Todo[] {
@@ -63,6 +72,20 @@ function move(todos: Todo[], from: number, to: number): Todo[] {
   }
   next.splice(to, 0, moved)
   return next
+}
+
+/**
+ * Every write funnels through here, so text is sanitized no matter which caller
+ * gets there. An empty title is a programming error rather than a user error —
+ * `validateDraft` already rejects it in the UI — so it throws instead of quietly
+ * storing a blank card.
+ */
+function requireTitle(raw: string): string {
+  const title = sanitizeTitle(raw)
+  if (title.length === 0) {
+    throw new Error('Refusing to store a todo whose title is empty after sanitizing.')
+  }
+  return title
 }
 
 export const todoStore = {
@@ -89,7 +112,7 @@ export const todoStore = {
       ...todos,
       {
         id: crypto.randomUUID(),
-        title: draft.title,
+        title: requireTitle(draft.title),
         dueDate: draft.dueDate,
         completed: false,
         createdAt: Date.now(),
@@ -98,7 +121,15 @@ export const todoStore = {
   },
 
   updateTodo(id: TodoId, edits: TodoEdits): void {
-    update((todos) => todos.map((todo) => (todo.id === id ? { ...todo, ...edits } : todo)))
+    update((todos) =>
+      todos.map((todo) => {
+        if (todo.id !== id) {
+          return todo
+        }
+        const title = edits.title === undefined ? todo.title : requireTitle(edits.title)
+        return { ...todo, ...edits, title }
+      }),
+    )
   },
 
   toggleTodo(id: TodoId): void {
@@ -114,10 +145,7 @@ export const todoStore = {
   },
 
   clearCompleted(): void {
-    update((todos) => {
-      const next = todos.filter((todo) => !todo.completed)
-      return next.length === todos.length ? todos : next
-    })
+    update((todos) => todos.filter((todo) => !todo.completed))
   },
 
   reorderTodo(draggedId: TodoId, targetId: TodoId): void {
