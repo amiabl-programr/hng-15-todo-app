@@ -11,6 +11,7 @@ function isTodo(value: unknown): value is Todo {
   return (
     typeof candidate.id === 'string' &&
     typeof candidate.title === 'string' &&
+    typeof candidate.notes === 'string' &&
     typeof candidate.completed === 'boolean' &&
     (typeof candidate.dueDate === 'string' || candidate.dueDate === null) &&
     typeof candidate.createdAt === 'number'

@@ -1,5 +1,5 @@
 import { readTodos, writeTodos } from './storage'
-import { sanitizeTitle } from './sanitize'
+import { sanitizeNotes, sanitizeTitle } from './sanitize'
 import type { Todo, TodoDraft, TodoEdits, TodoId } from '../types'
 
 export interface TodoStoreState {
@@ -113,6 +113,7 @@ export const todoStore = {
       {
         id: crypto.randomUUID(),
         title: requireTitle(draft.title),
+        notes: sanitizeNotes(draft.notes),
         dueDate: draft.dueDate,
         completed: false,
         createdAt: Date.now(),
@@ -127,7 +128,8 @@ export const todoStore = {
           return todo
         }
         const title = edits.title === undefined ? todo.title : requireTitle(edits.title)
-        return { ...todo, ...edits, title }
+        const notes = edits.notes === undefined ? todo.notes : sanitizeNotes(edits.notes)
+        return { ...todo, ...edits, title, notes }
       }),
     )
   },
