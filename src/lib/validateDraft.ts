@@ -1,5 +1,5 @@
 import { isPastDue, parseDateKey, todayKey } from './dueDate'
-import { normalizeText, TITLE_MAX_LENGTH } from './sanitize'
+import { normalizeNotes, normalizeText, NOTES_MAX_LENGTH, NOTES_MAX_LINES, TITLE_MAX_LENGTH } from './sanitize'
 import type { TodoDraft } from '../types'
 
 /**
@@ -14,6 +14,15 @@ export function validateDraft(draft: TodoDraft): string | null {
 
   if ([...normalizeText(draft.title)].length > TITLE_MAX_LENGTH) {
     return `Keep the title to ${TITLE_MAX_LENGTH} characters or fewer.`
+  }
+
+  const notes = normalizeNotes(draft.notes)
+  if ([...notes].length > NOTES_MAX_LENGTH) {
+    return `Keep the notes to ${NOTES_MAX_LENGTH} characters or fewer.`
+  }
+
+  if (notes.split('\n').length > NOTES_MAX_LINES) {
+    return `Keep the notes to ${NOTES_MAX_LINES} lines or fewer.`
   }
 
   if (draft.dueDate === null) {

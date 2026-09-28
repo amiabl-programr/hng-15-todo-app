@@ -3,6 +3,8 @@ export type TodoId = string
 export interface Todo {
   id: TodoId
   title: string
+  /** Free-form multi-line notes. Empty string means no notes. */
+  notes: string
   completed: boolean
   /** ISO calendar date (`YYYY-MM-DD`) in the user's local timezone, or null when unset. */
   dueDate: string | null
@@ -19,6 +21,6 @@ export const FILTER_LABELS: Record<Filter, string> = {
   completed: 'Completed',
 }
 
-export type TodoDraft = Pick<Todo, 'title' | 'dueDate'>
+export type TodoDraft = Pick<Todo, 'title' | 'notes' | 'dueDate'>
 
 export type TodoEdits = Partial<Omit<Todo, 'id' | 'createdAt'>>
