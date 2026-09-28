@@ -54,6 +54,14 @@
   box-shadow: 0 0 0 3px rgb(144 184 50 / 20%);
 }
 
+.todo-form__textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+}
+
 .todo-form__actions {
   display: flex;
   gap: 8px;

@@ -104,6 +104,20 @@ export function TodoForm({
         </div>
       </div>
 
+      <div className="todo-form__field">
+        <label className="todo-form__label" htmlFor="todo-notes">
+          Notes
+        </label>
+        <textarea
+          id="todo-notes"
+          className="todo-form__input todo-form__textarea"
+          value={draft.notes}
+          rows={3}
+          placeholder="Add any details, links or steps…"
+          onChange={(event) => onDraftChange({ ...draft, notes: event.target.value })}
+        />
+      </div>
+
       {validationError !== null && (
         <p className="todo-form__error" role="alert">
           {validationError}

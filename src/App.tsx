@@ -6,7 +6,7 @@ import { useTodos } from './hooks/useTodos'
 import type { TodoDraft, TodoId } from './types'
 import './App.css'
 
-const EMPTY_DRAFT: TodoDraft = { title: '', dueDate: null }
+const EMPTY_DRAFT: TodoDraft = { title: '', notes: '', dueDate: null }
 
 const EMPTY_MESSAGES = {
   all: 'No tasks yet. Add your first one above.',
@@ -55,7 +55,7 @@ export default function App() {
       return
     }
     setEditingId(todo.id)
-    setDraft({ title: todo.title, dueDate: todo.dueDate })
+    setDraft({ title: todo.title, notes: todo.notes, dueDate: todo.dueDate })
   }
 
   function handleCancelEdit() {

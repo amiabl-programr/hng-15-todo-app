@@ -101,6 +101,40 @@
   color: var(--accent);
 }
 
+.todo-card__notes {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.todo-card__notes:not(.todo-card__notes--expanded) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.todo-card__notes-toggle {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.todo-card__notes-toggle:hover {
+  color: #a2c94a;
+  text-decoration: underline;
+}
+
 .todo-card__actions {
   display: flex;
   gap: 4px;

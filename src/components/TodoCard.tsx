@@ -1,6 +1,11 @@
+import { useState } from 'react'
 import { formatDateKey, isPastDue, isToday } from '../lib/dueDate'
 import type { Todo } from '../types'
 import './TodoCard.css'
+
+/** Notes longer than this in either dimension get a show more / show less toggle. */
+const COLLAPSED_LINES = 2
+const COLLAPSED_CHARS = 100
 
 export interface TodoCardProps {
   todo: Todo
@@ -50,6 +55,11 @@ export function TodoCard({
   const tone = dueTone(todo)
   const isFirst = position === 0
   const isLast = position === total - 1
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false)
+
+  const hasNotes = todo.notes.length > 0
+  const isNotesLong =
+    todo.notes.split('\n').length > COLLAPSED_LINES || todo.notes.length > COLLAPSED_CHARS
 
   const className = [
     'todo-card',
@@ -111,6 +121,27 @@ export function TodoCard({
               {tone === 'overdue' ? 'Overdue · ' : tone === 'today' ? 'Due today · ' : 'Due '}
               {formatDateKey(todo.dueDate)}
             </p>
+          )}
+          {hasNotes && (
+            <>
+              <p
+                className={`todo-card__notes${
+                  isNotesExpanded ? ' todo-card__notes--expanded' : ''
+                }`}
+              >
+                {todo.notes}
+              </p>
+              {isNotesLong && (
+                <button
+                  className="todo-card__notes-toggle"
+                  type="button"
+                  aria-expanded={isNotesExpanded}
+                  onClick={() => setIsNotesExpanded((expanded) => !expanded)}
+                >
+                  {isNotesExpanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
+            </>
           )}
         </div>
 
