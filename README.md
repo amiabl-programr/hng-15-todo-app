@@ -8,6 +8,8 @@ A dark-themed todo app built with Vite, React 19 and TypeScript. Todos persist t
 ## Features
 
 - **Create, edit, complete and delete** todos, each rendered as its own card.
+- **Multi-line notes** on every task, capped at 2000 characters and 20 lines and
+  clamped to two lines on the card until expanded.
 - **Due dates** that cannot be set in the past. Once set, a due date is allowed to
   fall behind the current day — that is what marks a task overdue.
 - **Filtering** by all / active / completed, with live counts, plus a one-click
@@ -64,6 +66,7 @@ which is why sanitizing and persistence live there rather than in the components
 interface Todo {
   id: string
   title: string
+  notes: string      // multi-line, '' when empty
   completed: boolean
   dueDate: string | null // local 'YYYY-MM-DD'
   createdAt: number
@@ -74,13 +77,18 @@ interface Todo {
 the same thing regardless of timezone. Those keys compare correctly as plain
 strings, which keeps the overdue check trivial.
 
+`notes` is a required field with no migration path. A todo saved by an earlier
+build has no `notes` key, fails the shape check in `storage.ts`, and is dropped
+on load rather than being backfilled.
+
 ## Input handling and XSS
 
 All text passes through `sanitizeText` before it is stored. It NFC-normalises the
 input, strips zero-width and bidi formatting marks and C0/C1 control characters,
 turns line separators into spaces, collapses whitespace runs, and caps the title
 at 120 code points. Truncation is done by code point so an emoji is never cut in
-half.
+half. Notes go through `sanitizeNotes`, which keeps line structure intact and
+additionally caps length and line count.
 
 Titles are **not** html-escaped before storage, and that is deliberate. React
 escapes every text node and attribute value on render, so escaping on the way in
@@ -99,7 +107,7 @@ clean, the second removes the vector.
 
 ## Testing
 
-Jest with `ts-jest` and the jsdom environment. 79 tests cover the date helpers,
+Jest with `ts-jest` and the jsdom environment. 107 tests cover the date helpers,
 the sanitizer, draft validation, storage round-tripping and error handling, and
 every store mutation including reordering and no-op behaviour.
 
