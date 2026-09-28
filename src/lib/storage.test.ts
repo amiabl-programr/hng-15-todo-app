@@ -6,6 +6,7 @@ const KEY = 'hng15.todos.v1'
 const sample: Todo = {
   id: 'a',
   title: 'Buy milk',
+  notes: '',
   completed: false,
   dueDate: null,
   createdAt: 1,
@@ -29,6 +30,22 @@ describe('readTodos', () => {
     const risky = { ...sample, title: '<img src=x onerror=alert(1)>' }
     writeTodos([risky])
     expect(readTodos()[0]?.title).toBe('<img src=x onerror=alert(1)>')
+  })
+
+  it('round-trips multi-line notes verbatim', () => {
+    const withNotes = { ...sample, notes: 'line one\nline two' }
+    writeTodos([withNotes])
+    expect(readTodos()[0]?.notes).toBe('line one\nline two')
+  })
+
+  it('drops entries saved before notes existed', () => {
+    const { notes, ...legacy } = sample
+    void notes
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify([legacy, { ...sample, id: 'b' }]),
+    )
+    expect(readTodos().map((todo) => todo.id)).toEqual(['b'])
   })
 
   it('throws on malformed JSON so the caller can surface it', () => {

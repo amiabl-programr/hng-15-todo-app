@@ -19,6 +19,7 @@ const seed = (todos: Todo[]) => {
 const todo = (overrides: Partial<Todo> = {}): Todo => ({
   id: 'a',
   title: 'Buy milk',
+  notes: '',
   completed: false,
   dueDate: null,
   createdAt: 1,
@@ -56,8 +57,8 @@ describe('hydration', () => {
 describe('addTodo', () => {
   it('appends an uncompleted todo with a unique id', async () => {
     const store = await freshStore()
-    store.addTodo({ title: 'first', dueDate: null })
-    store.addTodo({ title: 'second', dueDate: '2030-05-05' })
+    store.addTodo({ notes: '', title: 'first', dueDate: null })
+    store.addTodo({ notes: '', title: 'second', dueDate: '2030-05-05' })
 
     const { todos } = store.getSnapshot()
     expect(todos).toHaveLength(2)
@@ -70,7 +71,7 @@ describe('addTodo', () => {
   it('appends after existing todos rather than prepending', async () => {
     seed([todo()])
     const store = await freshStore()
-    store.addTodo({ title: 'newest', dueDate: null })
+    store.addTodo({ notes: '', title: 'newest', dueDate: null })
     expect(store.getSnapshot().todos.map((entry) => entry.title)).toEqual([
       'Buy milk',
       'newest',
@@ -79,25 +80,47 @@ describe('addTodo', () => {
 
   it('sanitizes the title before storing it', async () => {
     const store = await freshStore()
-    store.addTodo({ title: '  Buy\u200B   milk\u0000 ', dueDate: null })
+    store.addTodo({ notes: '', title: '  Buy\u200B   milk\u0000 ', dueDate: null })
     expect(store.getSnapshot().todos[0]?.title).toBe('Buy milk')
+  })
+
+  it('stores notes as an empty string when none are given', async () => {
+    const store = await freshStore()
+    store.addTodo({ notes: '', title: 'no notes', dueDate: null })
+    expect(store.getSnapshot().todos[0]?.notes).toBe('')
+  })
+
+  it('keeps multi-line notes and their line breaks', async () => {
+    const store = await freshStore()
+    store.addTodo({ notes: 'first line\nsecond line', title: 'with notes', dueDate: null })
+    expect(store.getSnapshot().todos[0]?.notes).toBe('first line\nsecond line')
+  })
+
+  it('sanitizes notes before storing them', async () => {
+    const store = await freshStore()
+    store.addTodo({
+      notes: '  step  one\u200B \r\n\r\n\r\n step two  ',
+      title: 'clean notes',
+      dueDate: null,
+    })
+    expect(store.getSnapshot().todos[0]?.notes).toBe('step one\n\nstep two')
   })
 
   it('truncates an over-long title', async () => {
     const store = await freshStore()
-    store.addTodo({ title: 'x'.repeat(500), dueDate: null })
+    store.addTodo({ notes: '', title: 'x'.repeat(500), dueDate: null })
     expect([...(store.getSnapshot().todos[0]?.title ?? '')]).toHaveLength(120)
   })
 
   it('throws rather than storing a blank card', async () => {
     const store = await freshStore()
-    expect(() => store.addTodo({ title: '   \u200B ', dueDate: null })).toThrow(/empty/)
+    expect(() => store.addTodo({ notes: '', title: '   \u200B ', dueDate: null })).toThrow(/empty/)
     expect(store.getSnapshot().todos).toEqual([])
   })
 
   it('persists the new todo', async () => {
     const store = await freshStore()
-    store.addTodo({ title: 'persisted', dueDate: null })
+    store.addTodo({ notes: '', title: 'persisted', dueDate: null })
     const raw = window.localStorage.getItem('hng15.todos.v1')
     expect(JSON.parse(raw ?? '[]')).toHaveLength(1)
   })
@@ -106,7 +129,7 @@ describe('addTodo', () => {
 describe('updateTodo', () => {
   it('edits the title and due date but keeps id and createdAt', async () => {
     const store = await freshStore()
-    store.addTodo({ title: 'first', dueDate: null })
+    store.addTodo({ notes: '', title: 'first', dueDate: null })
     const original = store.getSnapshot().todos[0]
 
     store.updateTodo(original?.id ?? '', { title: 'renamed', dueDate: '2031-01-01' })
@@ -133,6 +156,30 @@ describe('updateTodo', () => {
     const store = await freshStore()
     store.updateTodo('a', { title: '  spaced\u200B out  ' })
     expect(store.getSnapshot().todos[0]?.title).toBe('spaced out')
+  })
+
+  it('edits notes without touching the title', async () => {
+    seed([todo()])
+    const store = await freshStore()
+    store.updateTodo('a', { notes: 'line one\nline two' })
+
+    const updated = store.getSnapshot().todos[0]
+    expect(updated?.notes).toBe('line one\nline two')
+    expect(updated?.title).toBe('Buy milk')
+  })
+
+  it('sanitizes updated notes', async () => {
+    seed([todo()])
+    const store = await freshStore()
+    store.updateTodo('a', { notes: 'a\u200B\r\n\r\n\r\nb' })
+    expect(store.getSnapshot().todos[0]?.notes).toBe('a\n\nb')
+  })
+
+  it('can clear notes', async () => {
+    seed([todo({ notes: 'existing' })])
+    const store = await freshStore()
+    store.updateTodo('a', { notes: '' })
+    expect(store.getSnapshot().todos[0]?.notes).toBe('')
   })
 
   it('throws when the new title sanitizes to nothing', async () => {
@@ -295,7 +342,7 @@ describe('error reporting', () => {
       throw new Error('QuotaExceededError')
     })
 
-    store.addTodo({ title: 'will not persist', dueDate: null })
+    store.addTodo({ notes: '', title: 'will not persist', dueDate: null })
 
     const { todos, error } = store.getSnapshot()
     expect(todos).toHaveLength(1)
@@ -315,7 +362,7 @@ describe('error reporting', () => {
     window.localStorage.setItem('hng15.todos.v1', '{not json')
     const store = await freshStore()
 
-    store.addTodo({ title: 'now working', dueDate: null })
+    store.addTodo({ notes: '', title: 'now working', dueDate: null })
     expect(store.getSnapshot().error).toBeNull()
   })
 })
@@ -326,7 +373,7 @@ describe('subscribe', () => {
     const listener = jest.fn()
     store.subscribe(listener)
 
-    store.addTodo({ title: 'watched', dueDate: null })
+    store.addTodo({ notes: '', title: 'watched', dueDate: null })
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
@@ -336,7 +383,7 @@ describe('subscribe', () => {
     const unsubscribe = store.subscribe(listener)
 
     unsubscribe()
-    store.addTodo({ title: 'unwatched', dueDate: null })
+    store.addTodo({ notes: '', title: 'unwatched', dueDate: null })
     expect(listener).not.toHaveBeenCalled()
   })
 

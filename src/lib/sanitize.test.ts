@@ -1,4 +1,13 @@
-import { normalizeText, sanitizeText, sanitizeTitle, TITLE_MAX_LENGTH } from './sanitize'
+import {
+  normalizeNotes,
+  normalizeText,
+  NOTES_MAX_LENGTH,
+  NOTES_MAX_LINES,
+  sanitizeNotes,
+  sanitizeText,
+  sanitizeTitle,
+  TITLE_MAX_LENGTH,
+} from './sanitize'
 
 describe('normalizeText', () => {
   it('trims and collapses whitespace runs', () => {
@@ -69,5 +78,61 @@ describe('sanitizeTitle', () => {
 
   it('leaves a short title untouched', () => {
     expect(sanitizeTitle('  Buy milk  ')).toBe('Buy milk')
+  })
+})
+
+describe('normalizeNotes', () => {
+  it('preserves line breaks', () => {
+    expect(normalizeNotes('one\ntwo\nthree')).toBe('one\ntwo\nthree')
+  })
+
+  it('normalises CRLF and CR to LF', () => {
+    expect(normalizeNotes('one\r\ntwo\rthree')).toBe('one\ntwo\nthree')
+  })
+
+  it('collapses horizontal whitespace inside a line but keeps the breaks', () => {
+    expect(normalizeNotes('a  \t b\nc')).toBe('a b\nc')
+  })
+
+  it('trims spaces around line breaks', () => {
+    expect(normalizeNotes('one   \n   two')).toBe('one\ntwo')
+  })
+
+  it('limits blank runs to a single empty line', () => {
+    expect(normalizeNotes('one\n\n\n\n\ntwo')).toBe('one\n\ntwo')
+  })
+
+  it('strips invisible characters without joining the lines', () => {
+    expect(normalizeNotes('one\u200B\ntwo\u0000')).toBe('one\ntwo')
+  })
+
+  it('trims the outer edges', () => {
+    expect(normalizeNotes('\n\n  notes  \n\n')).toBe('notes')
+  })
+})
+
+describe('sanitizeNotes', () => {
+  it('leaves notes within both caps untouched', () => {
+    expect(sanitizeNotes('line one\nline two')).toBe('line one\nline two')
+  })
+
+  it('returns an empty string for whitespace-only notes', () => {
+    expect(sanitizeNotes('  \n \n  ')).toBe('')
+  })
+
+  it('caps total length by code point', () => {
+    expect([...sanitizeNotes('x'.repeat(NOTES_MAX_LENGTH + 100))]).toHaveLength(NOTES_MAX_LENGTH)
+  })
+
+  it('caps the number of lines', () => {
+    const many = Array.from({ length: NOTES_MAX_LINES + 10 }, (_, i) => `l${i}`).join('\n')
+    expect(sanitizeNotes(many).split('\n')).toHaveLength(NOTES_MAX_LINES)
+  })
+
+  it('does not split an emoji when capping length', () => {
+    const emojis = '🎉'.repeat(NOTES_MAX_LENGTH + 10)
+    const capped = sanitizeNotes(emojis)
+    expect(capped).not.toContain('\uFFFD')
+    expect([...capped]).toHaveLength(NOTES_MAX_LENGTH)
   })
 })

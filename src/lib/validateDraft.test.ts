@@ -1,5 +1,5 @@
 import { validateDraft } from './validateDraft'
-import { TITLE_MAX_LENGTH } from './sanitize'
+import { NOTES_MAX_LENGTH, NOTES_MAX_LINES, TITLE_MAX_LENGTH } from './sanitize'
 
 beforeEach(() => {
   jest.useFakeTimers()
@@ -10,8 +10,8 @@ afterEach(() => {
   jest.useRealTimers()
 })
 
-function draft(title: string, dueDate: string | null = null) {
-  return { title, dueDate }
+function draft(title: string, dueDate: string | null = null, notes = '') {
+  return { title, notes, dueDate }
 }
 
 describe('validateDraft', () => {
@@ -71,5 +71,48 @@ describe('validateDraft', () => {
 
   it('checks the title before the due date', () => {
     expect(validateDraft(draft('', '2000-01-01'))).toBe('Give the task a title before saving.')
+  })
+})
+
+describe('validateDraft notes', () => {
+  it('treats notes as optional', () => {
+    expect(validateDraft(draft('Task', null, ''))).toBeNull()
+  })
+
+  it('accepts multi-line notes', () => {
+    expect(validateDraft(draft('Task', null, 'first line\nsecond line\nthird line'))).toBeNull()
+  })
+
+  it('accepts notes at the length cap', () => {
+    expect(validateDraft(draft('Task', null, 'x'.repeat(NOTES_MAX_LENGTH)))).toBeNull()
+  })
+
+  it('rejects notes past the length cap', () => {
+    expect(validateDraft(draft('Task', null, 'x'.repeat(NOTES_MAX_LENGTH + 1)))).toBe(
+      `Keep the notes to ${NOTES_MAX_LENGTH} characters or fewer.`,
+    )
+  })
+
+  it('accepts notes at the line cap', () => {
+    const notes = Array.from({ length: NOTES_MAX_LINES }, (_, i) => `line ${i}`).join('\n')
+    expect(validateDraft(draft('Task', null, notes))).toBeNull()
+  })
+
+  it('rejects notes past the line cap', () => {
+    const notes = Array.from({ length: NOTES_MAX_LINES + 1 }, (_, i) => `line ${i}`).join('\n')
+    expect(validateDraft(draft('Task', null, notes))).toBe(
+      `Keep the notes to ${NOTES_MAX_LINES} lines or fewer.`,
+    )
+  })
+
+  it('measures the caps after whitespace is normalised', () => {
+    const padded = `\n\n\n`.repeat(NOTES_MAX_LINES) + 'ok'
+    expect(validateDraft(draft('Task', null, padded))).toBeNull()
+  })
+
+  it('rejects an over-long title even when notes are fine', () => {
+    expect(validateDraft(draft('x'.repeat(TITLE_MAX_LENGTH + 1), null, 'fine'))).toBe(
+      `Keep the title to ${TITLE_MAX_LENGTH} characters or fewer.`,
+    )
   })
 })
